@@ -1,1 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Marketing Prompt Generator</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 2rem; max-width: 900px }
+    form { display: grid; gap: .75rem; margin-bottom: 1rem }
+    label { font-weight: 600 }
+    input, textarea, select, button { padding: .6rem; font-size: 1rem }
+    .grid { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr }
+    pre { background: #f6f6f6; padding: 1rem; overflow: auto; border-radius: 8px }
+    .card { border: 1px solid #eee; border-radius: 10px; padding: 1rem }
+    .row { display: grid; gap: .5rem }
+  </style>
+</head>
+<body>
+  <h1>Marketing Prompt Generator</h1>
+  <p>Enter a few details. Get copy you can use immediately.</p>
+
+  <form id="f">
+    <div class="grid">
+      <div class="row">
+        <label>Business</label>
+        <input name="business" placeholder="White Rabbit Psychedelics" required />
+      </div>
+      <div class="row">
+        <label>Audience</label>
+        <input name="audience" placeholder="Spiritual seekers curious about microdosing" required />
+      </div>
+    </div>
+
+    <label>Offer</label>
+    <textarea name="offer" rows="2" placeholder="Starter microdose bundle with journal PDF"></textarea>
+
+    <div class="grid">
+      <div class="row">
+        <label>Tone</label>
+        <input name="tone" placeholder="calm, mindful, trustworthy" />
+      </div>
+      <div class="row">
+        <label>Platform</label>
+        <input name="platform" placeholder="Instagram reels / Substack" />
+      </div>
+    </div>
+
+    <label>Principle focus (optional)</label>
+    <select name="principle">
+      <option value="">Auto</option>
+      <option>AIDA</option>
+      <option>4Ps</option>
+    </select>
+
+    <button type="submit">Generate</button>
+  </form>
+
+  <div id="out" class="card" hidden>
+    <h2>Results</h2>
+    <div id="pretty"></div>
+    <h3>Raw JSON</h3>
+    <pre id="raw"></pre>
+  </div>
+
+  <script>
+    const form = document.getElementById('f');
+    const out = document.getElementById('out');
+    const raw = document.getElementById('raw');
+    const pretty = document.getElementById('pretty');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(form).entries());
+      out.hidden = true;
+
+      const resp = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        alert('Error generating copy. Try again.');
+        return;
+      }
+
+      const data = await resp.json();
+      raw.textContent = JSON.stringify(data, null, 2);
+
+      // Render a friendly view
+      pretty.innerHTML = `
+        <p><strong>Tagline:</strong> ${data.tagline}</p>
+        <p><strong>Value Prop:</strong> ${data.value_proposition}</p>
+        <h4>AIDA</h4>
+        <ul>
+          <li><strong>Attention:</strong> ${data.aida.attention}</li>
+          <li><strong>Interest:</strong> ${data.aida.interest}</li>
+          <li><strong>Desire:</strong> ${data.aida.desire}</li>
+          <li><strong>Action:</strong> ${data.aida.action}</li>
+        </ul>
+        <h4>4Ps</h4>
+        <ul>
+          <li><strong>Product:</strong> ${data.four_ps.product}</li>
+          <li><strong>Price:</strong> ${data.four_ps.price}</li>
+          <li><strong>Place:</strong> ${data.four_ps.place}</li>
+          <li><strong>Promotion:</strong> ${data.four_ps.promotion}</li>
+        </ul>
+        <h4>Hooks</h4>
+        <ul>${(data.hooks || []).map(h => `<li>${h}</li>`).join('')}</ul>
+        <p><strong>CTA:</strong> ${data.cta}</p>
+      `;
+
+      out.hidden = false;
+    });
+  </script>
+</body>
+</html>
 
